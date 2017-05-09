@@ -160,6 +160,63 @@ def blackbox_nonlinear(x, samplerate, axis=0):
     return np.clip(out, -x, x, out=out)
 
 
+def compressor(x, threshold, ratio, attack_time=0.03, release_time=0.003, makeup_gain=0):
+    """ Compressor
+    
+    This is a python implementation of the Matlab file 'compexp.m' in 
+    Udo Zoelzer, Digitial Audio Signal Processing (Ch.4.2.2).
+    The expander is omitted.
+    
+    Parameters
+    ----------
+    x : array-like
+        Input signal.
+    threshold : float
+        Level in dB above which the compressor is active
+    ratio : float
+        Compression ratio (>1)
+    attack_time : float
+        Attack time (>0)
+    release_time : float 
+        Release time (>0)
+    makeup_gain : float
+        Make-up gain in dB to adjust the overall level
+        
+    Returns
+    -------
+    numpy.ndarray
+        Output signal
+    
+    """
+    makeup_gain = 10**(makeup_gain/20) # convert to linear scale
+    slope_factor = 1 - 1/ratio
+    tav = 0.01  # averaging time constant for level detection
+    delay = 150
+
+    # initialize
+    xrms = 0
+    g = 1
+    buffer = np.zeros(delay)
+    y = np.zeros(x.shape)
+
+    for n in range(len(x)):
+        xrms = (1-tav) * xrms + tav * x[n]**2
+        X = 10 * np.log10(xrms)
+        G = np.min([0, slope_factor * (threshold - X)])
+        f = 10**(G / 20)
+        if f > g:
+            coeff = attack_time
+        else:
+            coeff = release_time
+
+        g = (1-coeff) * g + coeff * f
+        y[n] = g * buffer[-1]
+        buffer = np.concatenate(([x[n]], buffer[:-1:]))
+    return makeup_gain * y
+    
+
+
+
 class HttpFile(object):
     """based on http://stackoverflow.com/a/7852229/500098"""
 
