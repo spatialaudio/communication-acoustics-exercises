@@ -1,6 +1,7 @@
 """Some tools used in the communication acoustics exercises."""
 from __future__ import division  # Only needed for Python 2.x
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 from scipy import signal
 try:
@@ -207,8 +208,56 @@ def compressor(x, threshold, ratio, attack=0.03, release=0.003, makeup_gain=0):
         y[n] = g * buffer[-1]
         buffer = np.concatenate(([x[n]], buffer[:-1:]))
     return makeup_gain * y
-    
 
+
+def edc(ir):
+    L = len(ir)
+    window = np.ones_like(ir)
+    L = signal.fftconvolve(ir**2, window)[L-1:]
+    return L / L[-1]
+
+
+def rt20(ir, t0, fs=44100, plot=False):
+    """Reverberation time RT20.
+
+    Parameters
+    ----------
+    ir : array_type
+        Room impulse response.
+    t0 : float
+        Reference time in milliseconds.
+    fs : int, optional
+        Sampling frequency.
+    plot : bool, optional
+        Plot the energy decay curve.
+
+    Returns
+    -------
+    RT20 : float
+        Reverberation time
+    """
+
+    L = edc(ir)
+    n0 = int(np.round(t0 / 1000 * fs))  # Convert [ms] to [smaples]
+    E0 = L[n0]  # Energy at the reference time t0
+    n1 = int(np.argwhere(L < E0 * 10**-2)[0])  # 20 dB decay point
+    T = 3 * (n1 - n0) / fs
+    if plot:
+        time = np.arange(len(L)) / fs * 1000
+        t1 = n1 / fs * 1000
+        E1 = L[n1]
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(time, 10 * np.log10(L))
+        plt.plot(time, -20 * (time - t0) / (t1 - t0) + 10 * np.log10(E0), 'r--')
+        plt.plot(t0, 10 * np.log10(E0), 'o')
+        plt.plot(t1, 10 * np.log10(E1), 'o')
+        plt.xlabel('Time / ms')
+        plt.ylabel('EDC / dB')
+        plt.grid()
+        plt.ylim(ymin=10 * np.log10(L[-1]))
+        plt.title('RT = {:.2f} s'.format(T))
+    return T
 
 
 class HttpFile(object):
