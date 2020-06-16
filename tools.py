@@ -117,7 +117,7 @@ def db(x, power=False):
 
     """
     with np.errstate(divide='ignore'):
-        return 10 if power else 20 * np.log10(np.abs(x))
+        return (10 if power else 20) * np.log10(np.abs(x))
 
 
 def blackbox(x, samplerate, axis=0):
