@@ -285,6 +285,9 @@ class HttpFile(object):
         self._offset += len(data)
         return data
 
+    def seekable(self):
+        return True
+
     def seek(self, offset, whence=os.SEEK_SET):
         if whence == os.SEEK_SET:
             self._offset = offset
