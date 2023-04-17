@@ -1,3 +1,6 @@
+matplotlib==3.3.3
+numpy==1.22.3
+scipy==1.7.3
 jupyter
 notebook
 ipykernel
